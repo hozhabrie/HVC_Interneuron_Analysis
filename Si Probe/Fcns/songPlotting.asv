@@ -1,0 +1,138 @@
+
+clear all; close all; warning off; clc;0
+
+w = 4;%:length(birds)
+
+fs = 30000;
+wing = 1;
+wind = [-wing wing]; %we might want to change this!!!!!!!!!!!!!!!!
+labels = {'sm'; 'pm'; 'pms'};
+samplingInterval = 1/fs;
+wavWind = [-1*fs/1000 1*fs/1000];
+timeAxis =  linspace(0,(2*wavWind(2)+1)/fs*1000,(2*wavWind(2)+1));
+ticklen = 3;
+spontWind = [0 5];
+set(0,'DefaultFigureVisible','off');
+birds = {'C22'; 'C24'; 'C50'; 'C52'; 'C57'};
+dir = '/Users/ellie/Dropbox (NYU Langone Health)/SiProbe/';
+bird = char(birds(w));
+path = [dir bird '/'];
+
+audioPath = [path 'audio/'];
+load([audioPath 'audioLabels.mat']);
+template = audioread([audioPath 'singing/template.wav']);
+motif = audioread([audioPath 'playback/motif.wav']);
+
+dataPath = [path 'data/'];
+load([dataPath 'clusters.mat']);
+load([dataPath 'lenRec.mat']);
+
+opts = detectImportOptions([path bird '_goodSiUnits.xlsx']);
+opts.DataRange = 'A2';
+opts.VariableNamesRange = 'A1';
+goodCells = readtable([path bird '_goodSiUnits.xlsx'],opts);
+toPrint = (goodCells{:,3});
+startRec = (goodCells{:,4});
+stopRec = (goodCells{:,5});
+identity = (goodCells{:,6});
+whichOld = strcmp(identity,'i');
+
+% split 'em
+split = [clusters.wfRise].*[clusters.songSparse];
+subtype = string(nan(length(clusters),1));
+border = .25;
+subtype = subtype(logical(toPrint));
+subtype(split>border) = 'e';
+subtype(split<=border) = 'i';
+which = subtype == 'i';
+numUnits = length(clusters);
+id = [clusters.clusterID];
+
+
+%% get data structures for plotting
+
+figure('visible','on','WindowState','maximized');
+count = 1;
+audio = template;
+audWing = round(wing*fs-length(audio)/2,0);
+paddedAudio = [zeros(audWing,1); audio; zeros(audWing,1)];
+
+
+ax(1) =  subplot(31,1,1);
+plot(linspace(wind(1),wind(2), length(paddedAudio)), paddedAudio, 'k')
+set(gca,'xtick',[],'ytick',[],'box','off','xcolor','none','ycolor','none','color','none')
+xlim(wind)
+hold on
+for n = 1:3%numUnits %[6 24 35 58]%[6 13 33 43 59 60 62 79 87 99]
+    if toPrint(n)==1 & count <= 30
+        disp([string(count) + ' _ ' + string(n)])
+        count = count + 1;
+        startRecFixed = startRec(n)*fs;
+        startRecFixed(startRecFixed == 0) = 1;
+        if strcmp(stopRec{n},'end')
+            stopRecFixed = lenRec;
+        else
+            stopRecFixed = str2double(stopRec{n})*fs;
+        end
+
+        motifRange = [floor(startRecFixed/fs) ceil(stopRecFixed/fs)];
+
+        for i = 1%:length(labels)
+            if strcmp(labels{i},'sm')
+                audio = template;
+            else
+                audio = motif;
+            end
+            Event = getEventTimes(audioPath, fs, audio, audioLabels, labels{i});
+            times = [dataPath labels{i} 'TimesPlots.mat'];
+            takeMotif = Event.start>=motifRange(1) & Event.start<=motifRange(2);
+            structElem = fieldnames(Event);
+            for j = 2:5
+                Event.(structElem{j}) = Event.(structElem{j})(takeMotif);
+            end
+            assignin('base',[labels{i} 'Times'],Event);
+            if ~isempty(Event.start)
+                [outStruct, countSp] = alignSpikeTimesSi(clusters(n), wind, Event,Event.center);
+            else
+                outStruct = [];
+                countSp = [];
+            end
+            % histo = [dataPath labels{i} 'HistPlots.mat'];
+            assignin('base',[labels{i} 'Hist'],countSp);
+            %  alignedStruct = [dataPath labels{i} 'SpikesPlots.mat'];
+            assignin('base',[labels{i} 'Spks'],outStruct);
+        end
+
+
+        %% plot everything
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%  MOTIFS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        i = 1;%:3
+        Event = smTimes;
+        outStruct = smSpks;
+        countSp = smHist;
+
+        ax(count) = subplot(31,1,count);
+        for k = 1:3%length(Event.start)
+            hold on
+            trial = outStruct.eventTrials == k;
+            trialSpks = outStruct.eventTimesAligned(trial);
+            plot(trialSpks,ones(length(trialSpks),1)-2*k, 'k|')
+            hold on
+        end
+      %  title(id(n))
+        xlim(wind)
+       % ylim([-7 0])
+       ylabel(count)
+        set(gca,'xtick',[],'box','off','xcolor','none','color','none','TickDir','out')
+            linkaxes(ax, 'x');
+
+    
+    end
+
+end
+    %% save shit
+
+    set(gcf,'PaperOrientation','portrait', 'PaperUnits', 'inches', 'PaperSize', [8.5 11]);
+    cd('/Users/ellie/Dropbox (NYU Langone Health)/Thesis/figures/');
+  %  print([bird ' song'], '-dpdf','-fillpage');
