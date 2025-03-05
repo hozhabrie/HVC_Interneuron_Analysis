@@ -6,3 +6,5 @@ This repository includes:
 3. In vivo physiology and behavioral analysis of HVC interneurons obtained from juxtacellular recordings with 2photon guidance (see juxQuantifications.m and juxFunctions.m under Juxta folder). This in combination with histological analysis creates linkage of molecular and functional classifications of zebra finch HVC interneuron subtypes.
 
 4. Extraction and handling of audio data for sensory playback and singing activity (Audio folder). 
+
+5. An unpublished script aimed at combining juxtacellular and silicon probe datasets, with caveats that some parameters will be prone to technology-specific differences (see ComboJuxSi.m).
