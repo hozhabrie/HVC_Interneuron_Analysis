@@ -4,3 +4,5 @@ This repository includes:
 2. In vivo physiology and behavioral analysis of HVC interneurons obtained from high-density silicon probe single unit recordings (see siQuantifications and siFunctions under Si Probe folder). This assesses physiological categorization of HVC interneurons based on network-defined paramaters.
 
 3. In vivo physiology and behavioral analysis of HVC interneurons obtained from juxtacellular recordings with 2photon guidance (see juxQuantifications.m and juxFunctions.m under Juxta folder). This in combination with histological analysis creates linkage of molecular and functional classifications of zebra finch HVC interneuron subtypes.
+
+4. Extraction and handling of audio data for sensory playback and singing activity (Audio folder). 
